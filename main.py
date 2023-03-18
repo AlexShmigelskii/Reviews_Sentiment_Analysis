@@ -16,6 +16,7 @@ from sklearn.svm import LinearSVC
 from wordcloud import WordCloud
 
 warnings.filterwarnings('ignore')
+stop_words = stopwords.words('english')
 
 
 # nltk.download('punkt')
@@ -78,7 +79,6 @@ def load_test_data(
     data_directory: str = "aclImdb/test",
 ) -> list:
     # Loading from file
-    stop_words = stopwords.words('english')
     labeled_data = []
 
     nlp = spacy.load("en_core_web_sm")
@@ -86,7 +86,7 @@ def load_test_data(
 
         labeled_directory = f"{data_directory}/{label}"
 
-        count = 0
+        # count = 0
 
         for review in os.listdir(labeled_directory):
 
@@ -272,6 +272,22 @@ def test_model(cv):
     print('LogisticRegression Rating accuracy - ', str(reg_rating_accuracy * 100) + '%')
 
 
+def predict_review(
+        review,
+        sentiment_model=joblib.load('models/sentiment_models/reg_sentiment_model.joblib'),
+        rating_model=joblib.load('models/rating_models/reg_rating_model.joblib'),
+        cv=joblib.load('vectorizer.pkl'),
+
+):
+    filtered_review = [review]
+    X = cv.transform(filtered_review)
+    y_new = sentiment_model.predict(X)
+    r_new = rating_model.predict(X)
+
+    print(y_new)
+    print(r_new)
+
+
 if __name__ == "__main__":
 
     # vectorizer = train_model()
@@ -279,3 +295,7 @@ if __name__ == "__main__":
 
     # vectorizer = joblib.load('vectorizer.pkl')
     # test_model(cv=vectorizer)
+
+    predict_review(review='''''')
+
+
