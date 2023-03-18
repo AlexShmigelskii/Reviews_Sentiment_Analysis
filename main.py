@@ -32,9 +32,15 @@ def load_training_data(
     nlp = spacy.load("en_core_web_sm")
     for label in ["pos", "neg"]:
 
+        count = 0
+
         labeled_directory = f"{data_directory}/{label}"
 
         for review in os.listdir(labeled_directory):
+
+            # count += 1
+            # if count > 150:
+            #     break
 
             if review.endswith(".txt"):
 
@@ -59,6 +65,9 @@ def load_training_data(
 
                     else:
                         labeled_data.append((filtered_data, 0, rating_score))
+
+                    # if count > 150:
+                    #     break
 
     random.shuffle(labeled_data)
 
@@ -81,9 +90,9 @@ def load_test_data(
 
         for review in os.listdir(labeled_directory):
 
-            count += 1
-            if count > 20:
-                break
+            # count += 1
+            # if count > 500:
+            #     break
 
             if review.endswith(".txt"):
 
@@ -109,8 +118,8 @@ def load_test_data(
                     else:
                         labeled_data.append((filtered_data, 0, rating_score))
 
-                    if count > 20:
-                        break
+                    # if count > 500:
+                    #     break
 
     random.shuffle(labeled_data)
 
@@ -188,12 +197,12 @@ def train_model(
     cv = TfidfVectorizer()  # max_features=2500
     X = cv.fit_transform(reviews)
 
-    # x_train, x_test, y_train, y_test, r_train, r_test = train_test_split(X, sentiment, rating, test_size=0.2,
-    #                                                                      random_state=42)
+    x_train, x_test, y_train, y_test, r_train, r_test = train_test_split(X, sentiment, rating, test_size=0.01,
+                                                                         random_state=42)
 
-    x_train = reviews
-    y_train = sentiment
-    r_train = rating
+    # x_train = reviews
+    # y_train = sentiment
+    # r_train = rating
 
     # first model
 
@@ -228,21 +237,28 @@ def train_model(
     #     save_model(reg_sentiment_model, filename='reg_sentiment_model_2' + str(reg_sentiment_accuracy * 100) + '%')
     #     save_model(reg_rating_model, filename='reg_rating_model_2' + str(reg_rating_accuracy * 100) + '%')
 
-    save_model(reg_sentiment_model, filename='reg_sentiment_model')
-    save_model(reg_rating_model, filename='reg_rating_modelw')
+    save_model(reg_sentiment_model, filename='reg_sentiment_model.joblib')
+    save_model(reg_rating_model, filename='reg_rating_model.joblib')
+
+    return cv
 
 
-def test_model():
+def test_model(cv):
 
-    A = load_test_data()
+    B = load_test_data()
 
-    x_test = [i[0] for i in A]
-    y_test = [i[1] for i in A]
-    r_test = [i[2] for i in A]
+    reviews_test = [i[0] for i in B]
+    sentiment_test = [i[1] for i in B]
+    rating_test = [i[2] for i in B]
+
+    X = cv.transform(reviews_test)
+
+    x_train, x_test, y_train, y_test, r_train, r_test = train_test_split(X, sentiment_test, rating_test, test_size=0.9,
+                                                                         random_state=42)
 
     # loading models
-    loaded_sentiment_model = load_model(filename='reg_sentiment_model_1_88.66%.sav')
-    loaded_rating_model = load_model(filename='reg_rating_model_1_42.58%.sav')
+    loaded_sentiment_model = load_model(filename='reg_sentiment_model.joblib')
+    loaded_rating_model = load_model(filename='reg_rating_model.joblib')
 
     # testing the models
     reg_sentiment_pred = loaded_sentiment_model.predict(x_test)
@@ -258,4 +274,8 @@ def test_model():
 
 if __name__ == "__main__":
 
-    test_model()
+    # vectorizer = train_model()
+    # joblib.dump(vectorizer, 'vectorizer.pkl')
+
+    # vectorizer = joblib.load('vectorizer.pkl')
+    # test_model(cv=vectorizer)
