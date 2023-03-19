@@ -1,3 +1,4 @@
+import copy
 import os
 import random
 import warnings
@@ -7,81 +8,96 @@ import joblib
 
 from matplotlib import pyplot as plt
 from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.linear_model import LogisticRegression
 from sklearn import metrics
 from sklearn.model_selection import train_test_split
 from sklearn.svm import LinearSVC
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
 from wordcloud import WordCloud
 
 warnings.filterwarnings('ignore')
-stop_words = stopwords.words('english')
+stop_words = set(stopwords.words('english'))
+lemmatizer = WordNetLemmatizer()
 
 
 # nltk.download('punkt')
 # nltk.download('stopwords')
+# nltk.download('wordnet')
 
 
 def load_training_data(
-        data_directory: str = "aclImdb/train",
+        directory: str = "aclImdb/",
 ) -> list:
     # Loading from file
-    stop_words = stopwords.words('english')
     labeled_data = []
 
-    nlp = spacy.load("en_core_web_sm")
-    for label in ["pos", "neg"]:
+    # nlp = spacy.load("en_core_web_sm")
+    for mode in ['train', 'test']:
 
-        count = 0
+        data_directory = f"{directory}/{mode}"
 
-        labeled_directory = f"{data_directory}/{label}"
+        for label in ["pos", "neg"]:
 
-        for review in os.listdir(labeled_directory):
+            count = 0
 
-            # count += 1
-            # if count > 150:
-            #     break
+            labeled_directory = f"{data_directory}/{label}"
 
-            if review.endswith(".txt"):
+            for review in os.listdir(labeled_directory):
 
-                # extract rating score
-                rating_score = int(os.path.splitext(review)[0][-1])
+                # count += 1
+                # if count > 150:
+                #     break
 
-                if rating_score == 0:
-                    rating_score = int(os.path.splitext(review)[0][-2:])
+                if review.endswith(".txt"):
 
-                # extracting data
-                with open(f"{labeled_directory}/{review}") as f:
-                    data = f.read()
-                    data = nlp(data.replace("<br />", ""))
+                    # extract rating score
+                    rating_score = int(os.path.splitext(review)[0][-1])
 
-                    # Tokenizaion
-                    filtered_data = " ".join([str(token.lemma_).lower() for token in data if not token.is_stop
-                                              and str(token) not in stop_words
-                                              and str(token) not in ['.', ',', '-']])
+                    if rating_score == 0:
+                        rating_score = int(os.path.splitext(review)[0][-2:])
 
-                    if label == 'pos':
-                        labeled_data.append((filtered_data, 1, rating_score))
+                    # extracting data
+                    with open(f"{labeled_directory}/{review}") as f:
+                        data = f.read().replace("<br />", "")
 
-                    else:
-                        labeled_data.append((filtered_data, 0, rating_score))
+                        # Tokenizaion
+                        tokens = word_tokenize(data)
+                        filtered_data = " ".join([lemmatizer.lemmatize(word.lower()) for word in tokens
+                                                  if not word.lower() in stop_words
+                                                  and word.isalpha()])
 
-                    # if count > 150:
-                    #     break
+                        if label == 'pos':
+                            labeled_data.append((filtered_data, 1, rating_score))
+
+                        else:
+                            labeled_data.append((filtered_data, 0, rating_score))
+
+                        # if count > 150:
+                        #     break
 
     random.shuffle(labeled_data)
+
+    # labeled_data_2 = copy.deepcopy(labeled_data)
+    #
+    # random.shuffle(labeled_data_2)
+    #
+    # labeled_data += labeled_data_2
 
     return labeled_data
 
 
 def load_test_data(
-    data_directory: str = "aclImdb/test",
+        data_directory: str = "aclImdb/test",
 ) -> list:
     # Loading from file
     labeled_data = []
 
-    nlp = spacy.load("en_core_web_sm")
+    # nlp = spacy.load("en_core_web_sm")
     for label in ["pos", "neg"]:
 
         labeled_directory = f"{data_directory}/{label}"
@@ -104,13 +120,19 @@ def load_test_data(
 
                 # extracting data
                 with open(f"{labeled_directory}/{review}") as f:
-                    data = f.read()
-                    data = nlp(data.replace("<br />", ""))
+                    data = f.read().replace("<br />", "")
+                    # data = nlp(data.replace("<br />", ""))
 
                     # Tokenizaion
-                    filtered_data = " ".join([str(token.lemma_).lower() for token in data if not token.is_stop
-                                              and str(token) not in stop_words
-                                              and str(token) not in ['.', ',', '-']])
+
+                    tokens = word_tokenize(data)
+                    filtered_data = " ".join([lemmatizer.lemmatize(word.lower()) for word in tokens
+                                              if not word.lower() in stop_words
+                                              and word.isalpha()])
+
+                    # filtered_data = " ".join([str(token.lemma_).lower() for token in data if not token.is_stop
+                    #                           and str(token) not in stop_words
+                    #                           and str(token) not in ['.', ',', '-']])
 
                     if label == 'pos':
                         labeled_data.append((filtered_data, 1, rating_score))
@@ -194,18 +216,13 @@ def train_model(
     sentiment = [i[1] for i in A]
     rating = [i[2] for i in A]
 
-    cv = TfidfVectorizer()  # max_features=2500
+    cv = TfidfVectorizer(max_features=25000)  # max_features=2500
     X = cv.fit_transform(reviews)
 
-    x_train, x_test, y_train, y_test, r_train, r_test = train_test_split(X, sentiment, rating, test_size=0.01,
+    x_train, x_test, y_train, y_test, r_train, r_test = train_test_split(X, sentiment, rating, test_size=0.0001,
                                                                          random_state=42)
 
-    # x_train = reviews
-    # y_train = sentiment
-    # r_train = rating
-
     # first model
-
     reg_sentiment_model = LogisticRegression()
     reg_rating_model = LogisticRegression()
 
@@ -237,14 +254,13 @@ def train_model(
     #     save_model(reg_sentiment_model, filename='reg_sentiment_model_2' + str(reg_sentiment_accuracy * 100) + '%')
     #     save_model(reg_rating_model, filename='reg_rating_model_2' + str(reg_rating_accuracy * 100) + '%')
 
-    save_model(reg_sentiment_model, filename='reg_sentiment_model.joblib')
-    save_model(reg_rating_model, filename='reg_rating_model.joblib')
+    save_model(reg_sentiment_model, filename='reg_sentiment_model14.joblib')
+    save_model(reg_rating_model, filename='reg_rating_model14.joblib')
 
     return cv
 
 
 def test_model(cv):
-
     B = load_test_data()
 
     reviews_test = [i[0] for i in B]
@@ -253,12 +269,12 @@ def test_model(cv):
 
     X = cv.transform(reviews_test)
 
-    x_train, x_test, y_train, y_test, r_train, r_test = train_test_split(X, sentiment_test, rating_test, test_size=0.9,
+    x_train, x_test, y_train, y_test, r_train, r_test = train_test_split(X, sentiment_test, rating_test, test_size=0.999,
                                                                          random_state=42)
 
     # loading models
-    loaded_sentiment_model = load_model(filename='reg_sentiment_model.joblib')
-    loaded_rating_model = load_model(filename='reg_rating_model.joblib')
+    loaded_sentiment_model = load_model(filename='reg_sentiment_model14.joblib')
+    loaded_rating_model = load_model(filename='reg_rating_model14.joblib')
 
     # testing the models
     reg_sentiment_pred = loaded_sentiment_model.predict(x_test)
@@ -274,28 +290,38 @@ def test_model(cv):
 
 def predict_review(
         review,
-        sentiment_model=joblib.load('models/sentiment_models/reg_sentiment_model.joblib'),
-        rating_model=joblib.load('models/rating_models/reg_rating_model.joblib'),
-        cv=joblib.load('vectorizer.pkl'),
+        sentiment_model=joblib.load('models/sentiment_models/reg_sentiment_model13.joblib'),
+        rating_model=joblib.load('models/rating_models/reg_rating_model13.joblib'),
+        cv=joblib.load('vectorizer13.pkl'),
 
 ):
-    filtered_review = [review]
-    X = cv.transform(filtered_review)
+    tokens = word_tokenize(review)
+    filtered_review = " ".join([lemmatizer.lemmatize(word.lower()) for word in tokens
+                                if not word.lower() in stop_words
+                                and word.isalpha()])
+
+    X = cv.transform([filtered_review])
     y_new = sentiment_model.predict(X)
     r_new = rating_model.predict(X)
 
-    print(y_new)
-    print(r_new)
+    sentiment = 'negative 'if y_new == 0 else 'positive'
+    rating = int(r_new)
+
+    if (y_new == 0 and rating > 4) or (y_new == 1 and rating < 5):
+        print(f"sorry, but I'm not sure about the decision... I guess that this review is {sentiment} but I gave it the"
+              f"mark of {rating}")
+
+    else:
+        print(f"I guess that this review is {sentiment}. I gave it the mark of {rating}")
 
 
 if __name__ == "__main__":
+    vectorizer = train_model()
+    joblib.dump(vectorizer, 'vectorizer14.pkl')
 
-    # vectorizer = train_model()
-    # joblib.dump(vectorizer, 'vectorizer.pkl')
+    vectorizer = joblib.load('vectorizer14.pkl')
+    test_model(cv=vectorizer)
 
-    # vectorizer = joblib.load('vectorizer.pkl')
-    # test_model(cv=vectorizer)
-
-    predict_review(review='''''')
+    # predict_review(review='''''')
 
 
