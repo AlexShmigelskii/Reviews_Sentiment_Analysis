@@ -155,3 +155,38 @@ LogisticRegression Rating recall -  0.3897097097097097
 LogisticRegression Sentiment f1-score - 0.8517010251587761
 LogisticRegression Rating f1-score -  0.29699854047858915
 
+# realized that batches and epochs are useless #
+
+Test "33":
+Max_features: 25000
+LogisticRegression Sentiment accuracy - 0.8781581581581581
+LogisticRegression Rating accuracy -  0.41517517517517516
+LogisticRegression Sentiment precision_score - 0.8781581858438201
+LogisticRegression Rating precision_score -  0.3520190454095949
+LogisticRegression Sentiment recall - 0.8781581581581581
+LogisticRegression Rating recall -  0.41517517517517516
+LogisticRegression Sentiment f1-score - 0.8781581593301828
+LogisticRegression Rating f1-score -  0.3596757560245354
+
+Test "33":
+Max_features: 50000
+LogisticRegression Sentiment accuracy - 0.8776776776776777
+LogisticRegression Rating accuracy -  0.41621621621621624
+LogisticRegression Sentiment precision_score - 0.877677821064213
+LogisticRegression Rating precision_score -  0.3523870728562295
+LogisticRegression Sentiment recall - 0.8776776776776777
+LogisticRegression Rating recall -  0.41621621621621624
+LogisticRegression Sentiment f1-score - 0.8776776804231861
+LogisticRegression Rating f1-score -  0.35917540424431327
+
+Test "34":
+Max_features: 30000
+LogisticRegression Sentiment accuracy - 0.877957957957958
+LogisticRegression Rating accuracy -  0.41581581581581584
+LogisticRegression Sentiment precision_score - 0.877958141254448
+LogisticRegression Rating precision_score -  0.35235090173741124
+LogisticRegression Sentiment recall - 0.877957957957958
+LogisticRegression Rating recall -  0.41581581581581584
+LogisticRegression Sentiment f1-score - 0.8779579595232252
+LogisticRegression Rating f1-score -  0.3599749937657697
+
