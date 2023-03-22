@@ -2,83 +2,110 @@ import copy
 import os
 import random
 import warnings
+import time
+import numpy as np
 import spacy
 import nltk
 import joblib
+import requests
 
 from matplotlib import pyplot as plt
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score, f1_score
 from sklearn.linear_model import LogisticRegression
 from sklearn import metrics
 from sklearn.model_selection import train_test_split
-from sklearn.svm import LinearSVC
-from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import Pipeline
 from wordcloud import WordCloud
 
 warnings.filterwarnings('ignore')
 stop_words = set(stopwords.words('english'))
 lemmatizer = WordNetLemmatizer()
 
-
 # nltk.download('punkt')
 # nltk.download('stopwords')
 # nltk.download('wordnet')
 
+global_num = 31
+max_features = 20000
+batch_size = 25000
+num_epochs = 1
+
+
+def correct_spelling(text):
+    """
+    Исправляет опечатки в переданной строке при помощи Yandex Speller API.
+    """
+    url = 'https://speller.yandex.net/services/spellservice.json/checkText'
+    params = {
+        'text': text,
+        'options': 518,  # включает варианты исправлений слов с использованием словарей Яндекса
+    }
+    response = requests.get(url, params=params)
+    data = response.json()
+    fixed_text = text
+
+    for error in reversed(data):
+        start_pos = error['pos']
+        end_pos = error['pos'] + error['len']
+        fixed_text = fixed_text[:start_pos] + error['s'][0] + fixed_text[end_pos:]
+
+    return fixed_text
+
 
 def load_training_data(
-        directory: str = "aclImdb/",
+        data_directory: str = "aclImdb/train",
 ) -> list:
     # Loading from file
     labeled_data = []
 
     # nlp = spacy.load("en_core_web_sm")
-    for mode in ['train', 'test']:
 
-        data_directory = f"{directory}/{mode}"
+    for label in ["pos", "neg"]:
 
-        for label in ["pos", "neg"]:
+        count = 0
 
-            count = 0
+        labeled_directory = f"{data_directory}/{label}"
 
-            labeled_directory = f"{data_directory}/{label}"
+        for review in os.listdir(labeled_directory):
 
-            for review in os.listdir(labeled_directory):
+            # count += 1
+            # if count > 150:
+            #     break
 
-                # count += 1
-                # if count > 150:
-                #     break
+            if review.endswith(".txt"):
 
-                if review.endswith(".txt"):
+                # extract rating score
+                rating_score = int(os.path.splitext(review)[0][-1])
 
-                    # extract rating score
-                    rating_score = int(os.path.splitext(review)[0][-1])
+                if rating_score == 0:
+                    rating_score = int(os.path.splitext(review)[0][-2:])
 
-                    if rating_score == 0:
-                        rating_score = int(os.path.splitext(review)[0][-2:])
+                # extracting data
+                with open(f"{labeled_directory}/{review}") as f:
+                    data = f.read().replace("<br />", "")
 
-                    # extracting data
-                    with open(f"{labeled_directory}/{review}") as f:
-                        data = f.read().replace("<br />", "")
+                    # correcting misspelled words
+                    # corrected_data = ''.join(correct_spelling(data))
 
-                        # Tokenizaion
-                        tokens = word_tokenize(data)
-                        filtered_data = " ".join([lemmatizer.lemmatize(word.lower()) for word in tokens
-                                                  if not word.lower() in stop_words
-                                                  and word.isalpha()])
+                    # Tokenizaion
+                    tokens = word_tokenize(data)
+                    filtered_data = " ".join([lemmatizer.lemmatize(word.lower()) for word in tokens
+                                              if not word.lower() in stop_words
+                                              # and word.isalpha()
+                                              and word.isalnum()
+                                              ])
 
-                        if label == 'pos':
-                            labeled_data.append((filtered_data, 1, rating_score))
+                    if label == 'pos':
+                        labeled_data.append((filtered_data, 1, rating_score))
 
-                        else:
-                            labeled_data.append((filtered_data, 0, rating_score))
+                    else:
+                        labeled_data.append((filtered_data, 0, rating_score))
 
-                        # if count > 150:
-                        #     break
+                    # if count > 150:
+                    #     break
 
     random.shuffle(labeled_data)
 
@@ -124,11 +151,12 @@ def load_test_data(
                     # data = nlp(data.replace("<br />", ""))
 
                     # Tokenizaion
-
                     tokens = word_tokenize(data)
                     filtered_data = " ".join([lemmatizer.lemmatize(word.lower()) for word in tokens
                                               if not word.lower() in stop_words
-                                              and word.isalpha()])
+                                              # and word.isalpha()
+                                              and word.isalnum()
+                                              ])
 
                     # filtered_data = " ".join([str(token.lemma_).lower() for token in data if not token.is_stop
                     #                           and str(token) not in stop_words
@@ -148,6 +176,24 @@ def load_test_data(
     return labeled_data
 
 
+def get_batches(data):
+    n = len(data)
+    n_batches = n // batch_size
+    batches = []
+
+    for i in range(n_batches):
+        batch = data[i * batch_size:(i + 1) * batch_size]
+        batches.append(batch)
+
+    if n % batch_size != 0:
+        batch = data[n_batches * batch_size:]
+        batches.append(batch)
+
+    random.shuffle(batches)
+
+    return batches
+
+
 def make_word_cloud(
         data: list,
 ):
@@ -160,15 +206,31 @@ def make_word_cloud(
     plt.show()
 
 
-# def make_confusion_matrix(
-#
-# ):
-#     cm = confusion_matrix(y_test, reg_sentiment_pred)
-#
-#     cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[False, True])
-#
-#     cm_display.plot()
-#     plt.show()
+def make_confusion_matrix(
+        y_test,
+        reg_sentiment_pred
+):
+    cm = confusion_matrix(y_test, reg_sentiment_pred)
+
+    cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[False, True])
+
+    cm_display.plot()
+    # plt.show()
+    plt.savefig(f'png/confusion_matrix_{global_num}.png')
+
+
+def plot_error_history(error_history):
+    """
+    Функция для построения графика количества ошибок от эпохи
+    error_history - список, содержащий значения ошибок для каждой эпохи обучения
+    """
+    plt.plot(error_history)
+    plt.grid()
+    plt.title("График процента правильных предсказаний")
+    plt.xlabel(f"Выборка * {batch_size}")
+    plt.ylabel("Процент")
+    # plt.show()
+    plt.savefig(f'png/error_history_{global_num}.png')
 
 
 def save_model(
@@ -209,34 +271,45 @@ def load_model(
 def train_model(
         necessary_accuracy: int = 0.8,
 ):
+    err = []
+
     # collecting data
     A = load_training_data()
 
-    reviews = [i[0] for i in A]
-    sentiment = [i[1] for i in A]
-    rating = [i[2] for i in A]
-
-    cv = TfidfVectorizer(max_features=25000)  # max_features=2500
-    X = cv.fit_transform(reviews)
-
-    x_train, x_test, y_train, y_test, r_train, r_test = train_test_split(X, sentiment, rating, test_size=0.0001,
-                                                                         random_state=42)
+    cv = TfidfVectorizer(max_features=max_features)  # max_features=2500
 
     # first model
     reg_sentiment_model = LogisticRegression()
     reg_rating_model = LogisticRegression()
 
-    # model fitting
-    reg_sentiment_model.fit(x_train, y_train)
-    reg_rating_model.fit(x_train, r_train)
+    for epoch in range(num_epochs):
 
-    # testing the model
-    # reg_sentiment_pred = reg_sentiment_model.predict(x_test)
-    # reg_rating_pred = reg_rating_model.predict(x_test)
+        batches = get_batches(A)
+        random.shuffle(batches)
 
-    # model accuracy
-    # reg_sentiment_accuracy = accuracy_score(y_test, reg_sentiment_pred)
-    # reg_rating_accuracy = accuracy_score(r_test, reg_rating_pred)
+        for batch in batches:
+            reviews = [i[0] for i in batch]
+            sentiment = [i[1] for i in batch]
+            rating = [i[2] for i in batch]
+
+            X = cv.fit_transform(reviews)
+
+            x_train, x_test, y_train, y_test, r_train, r_test = train_test_split(X, sentiment, rating, test_size=0.3,
+                                                                                 random_state=42)
+
+            # model fitting
+            reg_sentiment_model.fit(x_train, y_train)
+            reg_rating_model.fit(x_train, r_train)
+
+            # testing the model
+            reg_sentiment_pred = reg_sentiment_model.predict(x_test)
+            reg_rating_pred = reg_rating_model.predict(x_test)
+
+            # model accuracy
+            reg_sentiment_accuracy = accuracy_score(y_test, reg_sentiment_pred)
+            reg_rating_accuracy = accuracy_score(r_test, reg_rating_pred)
+
+            err.append((reg_sentiment_accuracy, reg_rating_accuracy))
 
     # print('LogisticRegression Sentiment accuracy - ', str(reg_sentiment_accuracy * 100) + '%')
     # print('LogisticRegression Rating accuracy - ', str(reg_rating_accuracy * 100) + '%')
@@ -254,10 +327,10 @@ def train_model(
     #     save_model(reg_sentiment_model, filename='reg_sentiment_model_2' + str(reg_sentiment_accuracy * 100) + '%')
     #     save_model(reg_rating_model, filename='reg_rating_model_2' + str(reg_rating_accuracy * 100) + '%')
 
-    save_model(reg_sentiment_model, filename='reg_sentiment_model14.joblib')
-    save_model(reg_rating_model, filename='reg_rating_model14.joblib')
+    save_model(reg_sentiment_model, filename=f'reg_sentiment_model_{global_num}.joblib')
+    save_model(reg_rating_model, filename=f'reg_rating_model_{global_num}.joblib')
 
-    return cv
+    return cv, err
 
 
 def test_model(cv):
@@ -269,12 +342,11 @@ def test_model(cv):
 
     X = cv.transform(reviews_test)
 
-    x_train, x_test, y_train, y_test, r_train, r_test = train_test_split(X, sentiment_test, rating_test, test_size=0.999,
-                                                                         random_state=42)
+    _, x_test, _, y_test, _, r_test = train_test_split(X, sentiment_test, rating_test, test_size=0.999)
 
     # loading models
-    loaded_sentiment_model = load_model(filename='reg_sentiment_model14.joblib')
-    loaded_rating_model = load_model(filename='reg_rating_model14.joblib')
+    loaded_sentiment_model = load_model(filename=f'reg_sentiment_model_{global_num}.joblib')
+    loaded_rating_model = load_model(filename=f'reg_rating_model_{global_num}.joblib')
 
     # testing the models
     reg_sentiment_pred = loaded_sentiment_model.predict(x_test)
@@ -282,17 +354,42 @@ def test_model(cv):
 
     # model accuracy
     reg_sentiment_accuracy = accuracy_score(y_test, reg_sentiment_pred)
+    # precision_sentiment = precision_score(y_test, reg_sentiment_pred, average='micro')
+    # recall_sentiment = recall_score(y_test, reg_sentiment_pred, average='micro')
+    # f1_sentiment = f1_score(y_test, reg_sentiment_pred, average='micro')
+
     reg_rating_accuracy = accuracy_score(r_test, reg_rating_pred)
+    # precision_rating = precision_score(r_test, reg_rating_pred, average='micro')
+    # recall_rating = recall_score(r_test, reg_rating_pred, average='micro')
+    # f1_rating = f1_score(r_test, reg_rating_pred, average='micro')
+
+    # visualizing results
+    make_confusion_matrix(y_test=y_test, reg_sentiment_pred=reg_sentiment_pred)
 
     print('LogisticRegression Sentiment accuracy - ', str(reg_sentiment_accuracy * 100) + '%')
     print('LogisticRegression Rating accuracy - ', str(reg_rating_accuracy * 100) + '%')
+
+    # print('LogisticRegression Sentiment precision_score - ', str(precision_sentiment * 100) + '%')
+    # print('LogisticRegression Rating precision_score - ', str(precision_rating * 100) + '%')
+    #
+    # print('LogisticRegression Sentiment recall - ', str(recall_sentiment * 100) + '%')
+    # print('LogisticRegression Rating recall - ', str(recall_rating * 100) + '%')
+    #
+    # print('LogisticRegression Sentiment f1-score - ', str(f1_sentiment * 100) + '%')
+    # print('LogisticRegression Rating f1-score - ', str(f1_rating * 100) + '%')
+
+    log_test(reg_sentiment_accuracy, reg_rating_accuracy,
+             # precision_sentiment, precision_rating,
+             # recall_sentiment, recall_rating,
+             # f1_sentiment, f1_rating
+             )
 
 
 def predict_review(
         review,
         sentiment_model=joblib.load('models/sentiment_models/reg_sentiment_model13.joblib'),
         rating_model=joblib.load('models/rating_models/reg_rating_model13.joblib'),
-        cv=joblib.load('vectorizer13.pkl'),
+        cv=joblib.load('models/vect/vectorizer13.pkl'),
 
 ):
     tokens = word_tokenize(review)
@@ -304,7 +401,7 @@ def predict_review(
     y_new = sentiment_model.predict(X)
     r_new = rating_model.predict(X)
 
-    sentiment = 'negative 'if y_new == 0 else 'positive'
+    sentiment = 'negative ' if y_new == 0 else 'positive'
     rating = int(r_new)
 
     if (y_new == 0 and rating > 4) or (y_new == 1 and rating < 5):
@@ -315,13 +412,35 @@ def predict_review(
         print(f"I guess that this review is {sentiment}. I gave it the mark of {rating}")
 
 
-if __name__ == "__main__":
-    vectorizer = train_model()
-    joblib.dump(vectorizer, 'vectorizer14.pkl')
+def log_test(sentiment, rating,
+             precision_sentiment, precision_rating,
+             recall_sentiment, recall_rating,
+             f1_sentiment, f1_rating
+             ):
+    with open('log.txt', 'a') as f:
+        f.write(f'Test "{global_num}":\n')
+        f.write(f'Batch size: {batch_size};  Number of Epochs: {num_epochs};  Max_features: {max_features}\n')
 
-    vectorizer = joblib.load('vectorizer14.pkl')
+        f.write(f'LogisticRegression Sentiment accuracy - {sentiment}\n')
+        f.write(f'LogisticRegression Rating accuracy -  {rating}\n')
+
+        f.write(f'LogisticRegression Sentiment precision_score - {precision_sentiment}\n')
+        f.write(f'LogisticRegression Rating precision_score -  {precision_rating}\n')
+
+        f.write(f'LogisticRegression Sentiment recall - {recall_sentiment}\n')
+        f.write(f'LogisticRegression Rating recall -  {recall_rating}\n')
+
+        f.write(f'LogisticRegression Sentiment f1-score - {f1_sentiment}\n')
+        f.write(f'LogisticRegression Rating f1-score -  {f1_rating}\n\n')
+
+
+if __name__ == "__main__":
+    vectorizer, errors = train_model()
+    joblib.dump(vectorizer, f'models/vect/vectorizer_{global_num}.pkl')
+
+    plot_error_history(errors)
+
+    vectorizer = joblib.load(f'models/vect/vectorizer_{global_num}.pkl')
     test_model(cv=vectorizer)
 
-    # predict_review(review='''''')
-
-
+    # predict_review(review='''this was was awful, i freaking hate it''')

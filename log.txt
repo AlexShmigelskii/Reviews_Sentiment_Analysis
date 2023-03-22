@@ -1,0 +1,69 @@
+Test "10":
+LogisticRegression Sentiment accuracy - 0.8484484484484485
+LogisticRegression Rating accuracy -  0.39235235235235233
+
+Test "20":
+LogisticRegression Sentiment accuracy - 0.8546146146146146
+LogisticRegression Rating accuracy -  0.3905905905905906
+
+Test "21":
+Batch size: 5000;  Number of Epochs: 10;  Max_features: 80000LogisticRegression
+Sentiment accuracy - 0.8555755755755756
+LogisticRegression Rating accuracy -  0.39231231231231234
+
+Test "22":
+Batch size: 12500;  Number of Epochs: 15;  Max_features: 100000LogisticRegression
+Sentiment accuracy - 0.8683883883883884
+LogisticRegression Rating accuracy -  0.4123723723723724
+
+Test "23":
+Batch size: 12500;  Number of Epochs: 20;  Max_features: 150000
+LogisticRegression Sentiment accuracy - 0.8671871871871872
+LogisticRegression Rating accuracy -  0.4086086086086086
+
+Test "24":
+Batch size: 12500;  Number of Epochs: 20;  Max_features: 200000
+LogisticRegression Sentiment accuracy - 0.8687087087087088
+LogisticRegression Rating accuracy -  0.40896896896896895
+
+Test "25": (DecisionTree)
+Batch size: 5000;  Number of Epochs: 2;  Max_features: 50000
+LogisticRegression Sentiment accuracy - 0.6793993993993994
+LogisticRegression Rating accuracy -  0.22954954954954954
+
+Test "26": (LinearSVC)
+Batch size: 5000;  Number of Epochs: 2;  Max_features: 50000
+LogisticRegression Sentiment accuracy - 0.8466066066066066
+LogisticRegression Rating accuracy -  0.36068068068068065
+
+Test "27": (LinearSVC)
+Batch size: 12500;  Number of Epochs: 10;  Max_features: 50000
+LogisticRegression Sentiment accuracy - 0.8549349349349349
+LogisticRegression Rating accuracy -  0.3642842842842843
+
+Test "28": (LinearSVC)
+Batch size: 12500;  Number of Epochs: 10;  Max_features: 80000
+LogisticRegression Sentiment accuracy - 0.8578578578578578
+LogisticRegression Rating accuracy -  0.36744744744744745
+
+Test "29": (LinearSVC)
+Batch size: 25000;  Number of Epochs: 20;  Max_features: 300000
+LogisticRegression Sentiment accuracy - 0.863063063063063
+LogisticRegression Rating accuracy -  0.368008008008008
+
+Test "30": (LinearSVC)
+Batch size: 25000;  Number of Epochs: 100;  Max_features: 20000
+LogisticRegression Sentiment accuracy - 0.8592992992992993
+LogisticRegression Rating accuracy -  0.36364364364364365
+
+Test "31":
+Batch size: 25000;  Number of Epochs: 1;  Max_features: 20000
+LogisticRegression Sentiment accuracy - 0.8753953953953953
+LogisticRegression Rating accuracy -  0.41293293293293293
+LogisticRegression Sentiment precision_score - 0.8753953953953953
+LogisticRegression Rating precision_score -  0.41293293293293293
+LogisticRegression Sentiment recall - 0.8753953953953953
+LogisticRegression Rating recall -  0.41293293293293293
+LogisticRegression Sentiment f1-score - 0.8753953953953953
+LogisticRegression Rating f1-score -  0.41293293293293293
+
