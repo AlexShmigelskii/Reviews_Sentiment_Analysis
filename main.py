@@ -28,7 +28,7 @@ lemmatizer = WordNetLemmatizer()
 # nltk.download('stopwords')
 # nltk.download('wordnet')
 
-global_num = 31
+global_num = 24
 max_features = 20000
 batch_size = 25000
 num_epochs = 1
@@ -334,6 +334,11 @@ def train_model(
 
 
 def test_model(cv):
+
+    # loading models
+    loaded_sentiment_model = load_model(filename=f'reg_sentiment_model_{global_num}.joblib')
+    loaded_rating_model = load_model(filename=f'reg_rating_model_{global_num}.joblib')
+
     B = load_test_data()
 
     reviews_test = [i[0] for i in B]
@@ -344,44 +349,40 @@ def test_model(cv):
 
     _, x_test, _, y_test, _, r_test = train_test_split(X, sentiment_test, rating_test, test_size=0.999)
 
-    # loading models
-    loaded_sentiment_model = load_model(filename=f'reg_sentiment_model_{global_num}.joblib')
-    loaded_rating_model = load_model(filename=f'reg_rating_model_{global_num}.joblib')
-
     # testing the models
     reg_sentiment_pred = loaded_sentiment_model.predict(x_test)
     reg_rating_pred = loaded_rating_model.predict(x_test)
 
     # model accuracy
     reg_sentiment_accuracy = accuracy_score(y_test, reg_sentiment_pred)
-    # precision_sentiment = precision_score(y_test, reg_sentiment_pred, average='micro')
-    # recall_sentiment = recall_score(y_test, reg_sentiment_pred, average='micro')
-    # f1_sentiment = f1_score(y_test, reg_sentiment_pred, average='micro')
+    precision_sentiment = precision_score(y_test, reg_sentiment_pred, average='weighted')
+    recall_sentiment = recall_score(y_test, reg_sentiment_pred, average='weighted')
+    f1_sentiment = f1_score(y_test, reg_sentiment_pred, average='weighted')
 
     reg_rating_accuracy = accuracy_score(r_test, reg_rating_pred)
-    # precision_rating = precision_score(r_test, reg_rating_pred, average='micro')
-    # recall_rating = recall_score(r_test, reg_rating_pred, average='micro')
-    # f1_rating = f1_score(r_test, reg_rating_pred, average='micro')
+    precision_rating = precision_score(r_test, reg_rating_pred, average='weighted')
+    recall_rating = recall_score(r_test, reg_rating_pred, average='weighted')
+    f1_rating = f1_score(r_test, reg_rating_pred, average='weighted')
 
     # visualizing results
     make_confusion_matrix(y_test=y_test, reg_sentiment_pred=reg_sentiment_pred)
 
     print('LogisticRegression Sentiment accuracy - ', str(reg_sentiment_accuracy * 100) + '%')
-    print('LogisticRegression Rating accuracy - ', str(reg_rating_accuracy * 100) + '%')
+    print('LogisticRegression Rating accuracy - ', str(reg_rating_accuracy * 100) + '%\n')
 
-    # print('LogisticRegression Sentiment precision_score - ', str(precision_sentiment * 100) + '%')
-    # print('LogisticRegression Rating precision_score - ', str(precision_rating * 100) + '%')
-    #
-    # print('LogisticRegression Sentiment recall - ', str(recall_sentiment * 100) + '%')
-    # print('LogisticRegression Rating recall - ', str(recall_rating * 100) + '%')
-    #
-    # print('LogisticRegression Sentiment f1-score - ', str(f1_sentiment * 100) + '%')
-    # print('LogisticRegression Rating f1-score - ', str(f1_rating * 100) + '%')
+    print('LogisticRegression Sentiment precision_score - ', str(precision_sentiment * 100) + '%')
+    print('LogisticRegression Rating precision_score - ', str(precision_rating * 100) + '%\n')
+
+    print('LogisticRegression Sentiment recall - ', str(recall_sentiment * 100) + '%')
+    print('LogisticRegression Rating recall - ', str(recall_rating * 100) + '%\n')
+
+    print('LogisticRegression Sentiment f1-score - ', str(f1_sentiment * 100) + '%')
+    print('LogisticRegression Rating f1-score - ', str(f1_rating * 100) + '%')
 
     log_test(reg_sentiment_accuracy, reg_rating_accuracy,
-             # precision_sentiment, precision_rating,
-             # recall_sentiment, recall_rating,
-             # f1_sentiment, f1_rating
+             precision_sentiment, precision_rating,
+             recall_sentiment, recall_rating,
+             f1_sentiment, f1_rating
              )
 
 
