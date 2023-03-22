@@ -14,7 +14,8 @@ from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score, f1_score
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_score, recall_score, f1_score, roc_auc_score, \
+    roc_curve
 from sklearn.linear_model import LogisticRegression
 from sklearn import metrics
 from sklearn.model_selection import train_test_split
@@ -28,10 +29,10 @@ lemmatizer = WordNetLemmatizer()
 # nltk.download('stopwords')
 # nltk.download('wordnet')
 
-global_num = 24
+global_num = 32
 max_features = 20000
-batch_size = 25000
-num_epochs = 1
+batch_size = 5000
+num_epochs = 8
 
 
 def correct_spelling(text):
@@ -219,18 +220,56 @@ def make_confusion_matrix(
     plt.savefig(f'png/confusion_matrix_{global_num}.png')
 
 
-def plot_error_history(error_history):
-    """
-    Функция для построения графика количества ошибок от эпохи
-    error_history - список, содержащий значения ошибок для каждой эпохи обучения
-    """
-    plt.plot(error_history)
-    plt.grid()
-    plt.title("График процента правильных предсказаний")
-    plt.xlabel(f"Выборка * {batch_size}")
-    plt.ylabel("Процент")
-    # plt.show()
-    plt.savefig(f'png/error_history_{global_num}.png')
+# похоже, что это абсолютно бесполезная штука
+
+# def plot_error_history(error_history):
+#     """
+#     Функция для построения графика количества ошибок от эпохи
+#     error_history - список, содержащий значения ошибок для каждой эпохи обучения
+#     """
+#
+#     sentiment = [i[0] for i in error_history]
+#     rating = [i[1] for i in error_history]
+#
+#     plt.plot(sentiment)
+#     plt.grid()
+#     plt.title("График процента правильных предсказаний тональности")
+#     plt.xlabel(f"Batch * {batch_size}")
+#     plt.ylabel("Процент")
+#     # plt.show()
+#     plt.savefig(f'png/error_history_sentiment_{global_num}.png')
+#
+#     plt.clf()
+#
+#     plt.plot(rating)
+#     plt.grid()
+#     plt.title("График процента правильных предсказаний рейтинга")
+#     plt.xlabel(f"Batch * {batch_size}")
+#     plt.ylabel("Процент")
+#     # plt.show()
+#     plt.savefig(f'png/error_history_rating_{global_num}.png')
+
+
+def plot_roc_curves(y_true_sentiment, y_pred_sentiment, y_true_rating, y_pred_rating):
+
+    # Считаем площадь под ROC-кривой для каждой модели
+    auc_sentiment = roc_auc_score(y_true_sentiment[25:], y_pred_sentiment)
+    # auc_rating = roc_auc_score(y_true_rating[24:], y_pred_rating)
+
+    # Строим ROC-кривые для каждой модели
+    fpr_sentiment, tpr_sentiment, _ = roc_curve(y_true_sentiment[25:], y_pred_sentiment)
+    # fpr_rating, tpr_rating, _ = roc_curve(y_true_rating[:len(y_pred_rating)], y_pred_rating)
+
+    # Рисуем графики
+    plt.clf()
+    plt.plot(fpr_sentiment, tpr_sentiment, label=f'Sentiment ROC curve (AUC = {auc_sentiment:.2f})')
+    # plt.plot(fpr_rating, tpr_rating, label=f'Rating ROC curve (AUC = {auc_rating:.2f})')
+    plt.plot([0, 1], [0, 1], 'k--', label='Random guess')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic')
+    plt.legend()
+    plt.savefig(f'png/roc_curves_{global_num}.png')
 
 
 def save_model(
@@ -347,7 +386,7 @@ def test_model(cv):
 
     X = cv.transform(reviews_test)
 
-    _, x_test, _, y_test, _, r_test = train_test_split(X, sentiment_test, rating_test, test_size=0.999)
+    _, x_test, _, y_test, _, r_test = train_test_split(X, sentiment_test, rating_test, test_size=0.999, shuffle=False)
 
     # testing the models
     reg_sentiment_pred = loaded_sentiment_model.predict(x_test)
@@ -366,6 +405,8 @@ def test_model(cv):
 
     # visualizing results
     make_confusion_matrix(y_test=y_test, reg_sentiment_pred=reg_sentiment_pred)
+    plot_roc_curves(y_true_sentiment=sentiment_test, y_pred_sentiment=reg_sentiment_pred,
+                    y_true_rating=rating_test, y_pred_rating=reg_rating_pred)
 
     print('LogisticRegression Sentiment accuracy - ', str(reg_sentiment_accuracy * 100) + '%')
     print('LogisticRegression Rating accuracy - ', str(reg_rating_accuracy * 100) + '%\n')
@@ -436,10 +477,10 @@ def log_test(sentiment, rating,
 
 
 if __name__ == "__main__":
-    vectorizer, errors = train_model()
-    joblib.dump(vectorizer, f'models/vect/vectorizer_{global_num}.pkl')
+    # vectorizer, errors = train_model()
+    # joblib.dump(vectorizer, f'models/vect/vectorizer_{global_num}.pkl')
 
-    plot_error_history(errors)
+    # plot_error_history(errors)
 
     vectorizer = joblib.load(f'models/vect/vectorizer_{global_num}.pkl')
     test_model(cv=vectorizer)

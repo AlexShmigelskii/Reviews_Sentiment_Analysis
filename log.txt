@@ -78,3 +78,80 @@ LogisticRegression Rating recall -  0.40884884884884887
 LogisticRegression Sentiment f1-score - 0.8685023812968684
 LogisticRegression Rating f1-score -  0.33768302277023293
 
+Test "32":
+Batch size: 25000;  Number of Epochs: 8;  Max_features: 20000
+LogisticRegression Sentiment accuracy - 0.8751951951951952
+LogisticRegression Rating accuracy -  0.41413413413413414
+LogisticRegression Sentiment precision_score - 0.8752075233857651
+LogisticRegression Rating precision_score -  0.3487771016146892
+LogisticRegression Sentiment recall - 0.8751951951951952
+LogisticRegression Rating recall -  0.41413413413413414
+LogisticRegression Sentiment f1-score - 0.8751942859908842
+LogisticRegression Rating f1-score -  0.3548750630702293
+
+Test "32":
+Batch size: 25000;  Number of Epochs: 8;  Max_features: 20000
+LogisticRegression Sentiment accuracy - 0.8746346346346346
+LogisticRegression Rating accuracy -  0.412972972972973
+LogisticRegression Sentiment precision_score - 0.8746520957221479
+LogisticRegression Rating precision_score -  0.3471420900255327
+LogisticRegression Sentiment recall - 0.8746346346346346
+LogisticRegression Rating recall -  0.412972972972973
+LogisticRegression Sentiment f1-score - 0.8746332337446296
+LogisticRegression Rating f1-score -  0.3527421817532665
+
+Test "32":
+Batch size: 25000;  Number of Epochs: 8;  Max_features: 20000
+LogisticRegression Sentiment accuracy - 0.8746746746746746
+LogisticRegression Rating accuracy -  0.4116916916916917
+LogisticRegression Sentiment precision_score - 0.8746918652725969
+LogisticRegression Rating precision_score -  0.34515324697386757
+LogisticRegression Sentiment recall - 0.8746746746746746
+LogisticRegression Rating recall -  0.4116916916916917
+LogisticRegression Sentiment f1-score - 0.8746733750977653
+LogisticRegression Rating f1-score -  0.3498959953820807
+
+Test "32":
+Batch size: 5000;  Number of Epochs: 8;  Max_features: 20000
+LogisticRegression Sentiment accuracy - 0.8517317317317318
+LogisticRegression Rating accuracy -  0.3896296296296296
+LogisticRegression Sentiment precision_score - 0.8524176075543153
+LogisticRegression Rating precision_score -  0.31558733338594164
+LogisticRegression Sentiment recall - 0.8517317317317318
+LogisticRegression Rating recall -  0.3896296296296296
+LogisticRegression Sentiment f1-score - 0.8516593981277876
+LogisticRegression Rating f1-score -  0.2969592888211935
+
+Test "32":
+Batch size: 5000;  Number of Epochs: 8;  Max_features: 20000
+LogisticRegression Sentiment accuracy - 0.8518118118118118
+LogisticRegression Rating accuracy -  0.3895895895895896
+LogisticRegression Sentiment precision_score - 0.8524923442566262
+LogisticRegression Rating precision_score -  0.31544104948664475
+LogisticRegression Sentiment recall - 0.8518118118118118
+LogisticRegression Rating recall -  0.3895895895895896
+LogisticRegression Sentiment f1-score - 0.8517397796875465
+LogisticRegression Rating f1-score -  0.2969067947467438
+
+Test "32":
+Batch size: 5000;  Number of Epochs: 8;  Max_features: 20000
+LogisticRegression Sentiment accuracy - 0.8517717717717718
+LogisticRegression Rating accuracy -  0.3898698698698699
+LogisticRegression Sentiment precision_score - 0.8524562708523956
+LogisticRegression Rating precision_score -  0.31557833986425515
+LogisticRegression Sentiment recall - 0.8517717717717718
+LogisticRegression Rating recall -  0.3898698698698699
+LogisticRegression Sentiment f1-score - 0.8517002434035335
+LogisticRegression Rating f1-score -  0.29713899928715143
+
+Test "32":
+Batch size: 5000;  Number of Epochs: 8;  Max_features: 20000
+LogisticRegression Sentiment accuracy - 0.8517717717717718
+LogisticRegression Rating accuracy -  0.3897097097097097
+LogisticRegression Sentiment precision_score - 0.852451812149177
+LogisticRegression Rating precision_score -  0.3154624991605889
+LogisticRegression Sentiment recall - 0.8517717717717718
+LogisticRegression Rating recall -  0.3897097097097097
+LogisticRegression Sentiment f1-score - 0.8517010251587761
+LogisticRegression Rating f1-score -  0.29699854047858915
+
